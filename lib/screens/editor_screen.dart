@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../state/editor_notifier.dart';
@@ -37,6 +38,12 @@ class _EditorScreenState extends State<EditorScreen> {
   void _statusListener() {
     final message = widget.notifier.statusMessage;
     if (message != null && mounted) {
+      // Skip export-related messages in SnackBar, since they will be shown via custom dialog
+      if (message.contains("Export") || message.contains("export") || message.contains("保存") || message.contains("照片已成功")) {
+        widget.notifier.clearStatus();
+        return;
+      }
+
       final accent = widget.notifier.palette.accent;
       final isSuccess = widget.notifier.isSuccessMessage;
 
@@ -63,6 +70,144 @@ class _EditorScreenState extends State<EditorScreen> {
       );
       widget.notifier.clearStatus();
     }
+  }
+
+  Future<void> _handleExport(BuildContext context) async {
+    final resultBytes = await widget.notifier.exportImage(_repaintKey);
+    if (!mounted) return;
+
+    if (resultBytes != null) {
+      _showExportResultDialog(context, isSuccess: true, imageBytes: resultBytes);
+    } else {
+      final status = widget.notifier.statusMessage;
+      if (status != null && !status.toLowerCase().contains("cancelled")) {
+        _showExportResultDialog(context, isSuccess: false, errorMessage: status);
+      }
+    }
+  }
+
+  void _showExportResultDialog(
+    BuildContext context, {
+    required bool isSuccess,
+    Uint8List? imageBytes,
+    String? errorMessage,
+  }) {
+    final palette = widget.notifier.palette;
+    final accent = palette.accent;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.65),
+      builder: (context) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: GlassmorphicPanel(
+                tintColor: palette.dominant,
+                opacity: 0.16,
+                blur: 30,
+                borderRadius: BorderRadius.circular(28),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSuccess ? accent.withOpacity(0.12) : const Color(0xFF3F1B1B).withOpacity(0.3),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSuccess ? accent.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        isSuccess ? Icons.check_circle_outline : Icons.error_outline,
+                        color: isSuccess ? accent : Colors.red,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      isSuccess ? '导出成功' : '导出失败',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isSuccess ? '图片已自动保存至系统相册' : (errorMessage ?? '未知错误，请重试'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                        letterSpacing: 0.5,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (isSuccess && imageBytes != null) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        height: 180,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white10),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black38,
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: AspectRatio(
+                            aspectRatio: 4 / 5,
+                            child: Image.memory(
+                              imageBytes,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          '确定',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showImportSourceSheet(BuildContext context) {
@@ -294,7 +439,7 @@ class _EditorScreenState extends State<EditorScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2.5, color: accent),
                   )
                 : TextButton(
-                    onPressed: hasImage ? () => widget.notifier.exportImage(_repaintKey) : null,
+                    onPressed: hasImage ? () => _handleExport(context) : null,
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       backgroundColor: hasImage ? Colors.white : Colors.white.withOpacity(0.04),
@@ -422,10 +567,10 @@ class _EditorScreenState extends State<EditorScreen> {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: RepaintBoundary(
-              key: _repaintKey,
+          child: RepaintBoundary(
+            key: _repaintKey,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
               child: widget.notifier.activeEffect.buildEffect(
                 context,
                 widget.notifier.originalImage!,

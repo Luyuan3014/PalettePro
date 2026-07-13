@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>我们需要此权限将导出的美丽图片保存到您的系统相册中。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>我们需要此权限以访问和保存图片到您的相册。</string>
 </dict>
 </plist>

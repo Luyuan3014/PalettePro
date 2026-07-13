@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:gal/gal.dart';
 
 import '../models/effect_processor.dart';
 import '../processors/card_effect_processor.dart';
@@ -130,12 +132,12 @@ class EditorNotifier extends ChangeNotifier {
   }
 
   /// Exports the canvas in high-resolution using [RepaintBoundary].
-  Future<void> exportImage(GlobalKey repaintKey) async {
+  Future<Uint8List?> exportImage(GlobalKey repaintKey) async {
     if (_originalImage == null) {
       _statusMessage = "Please import a photo first.";
       _isSuccessMessage = false;
       notifyListeners();
-      return;
+      return null;
     }
 
     try {
@@ -157,28 +159,47 @@ class EditorNotifier extends ChangeNotifier {
       }
       final Uint8List pngBytes = byteData.buffer.asUint8List();
 
-      // Let user pick output path cross-platform
-      final String defaultName = "palette_pro_${DateTime.now().millisecondsSinceEpoch}.png";
-      final String? outputFile = await FilePicker.saveFile(
-        dialogTitle: 'Export Beautiful Image',
-        fileName: defaultName,
-        type: FileType.custom,
-        allowedExtensions: ['png'],
-        bytes: pngBytes,
-      );
+      final bool isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
-      if (outputFile != null) {
-        final File file = File(outputFile);
-        await file.writeAsBytes(pngBytes);
-        _statusMessage = "Photo exported successfully.";
+      if (isMobile) {
+        final bool hasAccess = await Gal.hasAccess(toAlbum: true);
+        if (!hasAccess) {
+          final bool granted = await Gal.requestAccess(toAlbum: true);
+          if (!granted) {
+            throw Exception("未获得相册保存权限");
+          }
+        }
+        await Gal.putImageBytes(pngBytes, album: 'PalettePro');
+        _statusMessage = "照片已成功保存至系统相册。";
         _isSuccessMessage = true;
+        return pngBytes;
       } else {
-        _statusMessage = "Export cancelled.";
-        _isSuccessMessage = false;
+        // Fallback for Desktop/Web
+        final String defaultName = "palette_pro_${DateTime.now().millisecondsSinceEpoch}.png";
+        final String? outputFile = await FilePicker.saveFile(
+          dialogTitle: 'Export Beautiful Image',
+          fileName: defaultName,
+          type: FileType.custom,
+          allowedExtensions: ['png'],
+          bytes: pngBytes,
+        );
+
+        if (outputFile != null) {
+          final File file = File(outputFile);
+          await file.writeAsBytes(pngBytes);
+          _statusMessage = "Photo exported successfully.";
+          _isSuccessMessage = true;
+          return pngBytes;
+        } else {
+          _statusMessage = "Export cancelled.";
+          _isSuccessMessage = false;
+          return null;
+        }
       }
     } catch (e) {
       _statusMessage = "Failed to export image: $e";
       _isSuccessMessage = false;
+      return null;
     } finally {
       _isExporting = false;
       notifyListeners();
