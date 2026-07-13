@@ -21,13 +21,13 @@ class CardEffectProcessor extends EffectProcessor {
   @override
   dynamic createDefaultConfig() {
     return {
-      'blur': 50.0,
-      'scale': 1.4,
-      'brightness': 0.7,
-      'saturation': 0.6,
+      'blur': 90.0,
+      'scale': 2.0,
+      'brightness': 0.55,
+      'saturation': 0.8,
       'radius': 28.0,
-      'shadowBlur': 45.0,
-      'shadowOpacity': 0.35,
+      'shadowBlur': 55.0,
+      'shadowOpacity': 0.24,
       'title': '- xiao xi -',
       'subtitle': '© PalettePro Capture',
       'fontFamily': 'serif',
@@ -38,13 +38,13 @@ class CardEffectProcessor extends EffectProcessor {
 
   @override
   Widget buildEffect(BuildContext context, File originalImage, dynamic config) {
-    final double blur = (config['blur'] as num?)?.toDouble() ?? 50.0;
-    final double scale = (config['scale'] as num?)?.toDouble() ?? 1.4;
-    final double brightness = (config['brightness'] as num?)?.toDouble() ?? 0.7;
-    final double saturation = (config['saturation'] as num?)?.toDouble() ?? 0.6;
+    final double blur = (config['blur'] as num?)?.toDouble() ?? 90.0;
+    final double scale = (config['scale'] as num?)?.toDouble() ?? 2.0;
+    final double brightness = (config['brightness'] as num?)?.toDouble() ?? 0.55;
+    final double saturation = (config['saturation'] as num?)?.toDouble() ?? 0.8;
     final double radius = (config['radius'] as num?)?.toDouble() ?? 28.0;
-    final double shadowBlur = (config['shadowBlur'] as num?)?.toDouble() ?? 45.0;
-    final double shadowOpacity = (config['shadowOpacity'] as num?)?.toDouble() ?? 0.35;
+    final double shadowBlur = (config['shadowBlur'] as num?)?.toDouble() ?? 55.0;
+    final double shadowOpacity = (config['shadowOpacity'] as num?)?.toDouble() ?? 0.24;
     final String title = config['title']?.toString() ?? '- xiao xi -';
     final String subtitle = config['subtitle']?.toString() ?? '© PalettePro Capture';
     final String fontFamily = config['fontFamily']?.toString() ?? 'serif';
@@ -55,35 +55,91 @@ class CardEffectProcessor extends EffectProcessor {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // 1. Ambient Background Layer
-        AmbientBackground(
-          imageFile: originalImage,
-          blur: blur,
-          scale: scale,
-          brightness: brightness,
-          saturation: saturation,
-          dominantColor: palette?.dominant,
-          showVignette: true,
+        // 1. Ambient Background Layer (Full Bleed)
+        Positioned.fill(
+          child: AmbientBackground(
+            imageFile: originalImage,
+            blur: blur,
+            scale: scale,
+            brightness: brightness,
+            saturation: saturation,
+            palette: palette,
+            showVignette: true,
+          ),
         ),
 
-        // 2. Floating Card & Text Content
+        // 2. Translucent dark overlays (delicate top and bottom air washes)
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 90,
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.18),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 150,
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.28),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 3. Adaptive Sizing & Premium Breathing Typography
         LayoutBuilder(
           builder: (context, constraints) {
             final canvasWidth = constraints.maxWidth;
             final canvasHeight = constraints.maxHeight;
 
-            final titleFontSize = (canvasWidth * 0.045).clamp(14.0, 24.0);
-            final subtitleFontSize = (canvasWidth * 0.030).clamp(10.0, 14.0);
-            final spacingHeight = (canvasHeight * 0.035).clamp(12.0, 26.0);
+            // Calculate card dimensions dynamically based on canvas ratios to preserve breathing room
+            final double maxImgWidth = canvasWidth * 0.82;
+            final double maxImgHeight = canvasHeight * 0.54;
+
+            double imgWidth = maxImgWidth;
+            double imgHeight = maxImgWidth / aspectRatio;
+
+            if (imgHeight > maxImgHeight) {
+              imgHeight = maxImgHeight;
+              imgWidth = maxImgHeight * aspectRatio;
+            }
+
+            final titleFontSize = (canvasWidth * 0.046).clamp(13.0, 22.0);
+            final subtitleFontSize = (canvasWidth * 0.030).clamp(9.0, 13.0);
+            final spacingHeight = (canvasHeight * 0.040).clamp(14.0, 28.0);
 
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
+                SizedBox(
+                  width: imgWidth,
+                  height: imgHeight,
                   child: ForegroundCard(
                     imageFile: originalImage,
-                    aspectRatio: aspectRatio,
                     borderRadius: radius,
                     shadowBlur: shadowBlur,
                     shadowOpacity: shadowOpacity,
@@ -94,10 +150,12 @@ class CardEffectProcessor extends EffectProcessor {
                   title,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.95),
+                    color: Colors.white.withOpacity(0.92),
                     fontSize: titleFontSize,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 3.0,
+                    fontWeight: FontWeight.w300,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: 4.0,
+                    fontFamilyFallback: const ['Georgia', 'serif'],
                     fontFamily: fontFamily,
                   ),
                 ),
@@ -106,11 +164,13 @@ class CardEffectProcessor extends EffectProcessor {
                   subtitle,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.55),
+                    color: Colors.white.withOpacity(0.50),
                     fontSize: subtitleFontSize,
+                    fontWeight: FontWeight.w300,
                     fontStyle: FontStyle.italic,
+                    fontFamilyFallback: const ['Georgia', 'serif'],
                     fontFamily: fontFamily,
-                    letterSpacing: 1.0,
+                    letterSpacing: 2.0,
                   ),
                 ),
               ],
@@ -128,9 +188,9 @@ class CardEffectProcessor extends EffectProcessor {
     ValueChanged<dynamic> onUpdate,
   ) {
     final Map<String, dynamic> cfg = Map<String, dynamic>.from(config as Map);
-    final double blur = (cfg['blur'] as num?)?.toDouble() ?? 50.0;
-    final double scale = (cfg['scale'] as num?)?.toDouble() ?? 1.4;
-    final double brightness = (cfg['brightness'] as num?)?.toDouble() ?? 0.7;
+    final double blur = (cfg['blur'] as num?)?.toDouble() ?? 90.0;
+    final double scale = (cfg['scale'] as num?)?.toDouble() ?? 2.0;
+    final double brightness = (cfg['brightness'] as num?)?.toDouble() ?? 0.55;
     final double radius = (cfg['radius'] as num?)?.toDouble() ?? 28.0;
     final String title = cfg['title']?.toString() ?? '- xiao xi -';
     final String subtitle = cfg['subtitle']?.toString() ?? '© PalettePro Capture';
@@ -161,7 +221,7 @@ class CardEffectProcessor extends EffectProcessor {
                 child: Slider(
                   value: blur,
                   min: 10.0,
-                  max: 100.0,
+                  max: 120.0,
                   onChanged: (val) {
                     cfg['blur'] = val;
                     onUpdate(cfg);
@@ -183,7 +243,7 @@ class CardEffectProcessor extends EffectProcessor {
                 child: Slider(
                   value: scale,
                   min: 1.0,
-                  max: 2.0,
+                  max: 2.5,
                   onChanged: (val) {
                     cfg['scale'] = val;
                     onUpdate(cfg);

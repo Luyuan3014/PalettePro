@@ -21,13 +21,13 @@ class CinemaEffectProcessor extends EffectProcessor {
   @override
   dynamic createDefaultConfig() {
     return {
-      'blur': 65.0,
-      'scale': 1.5,
-      'brightness': 0.35, // Darker cinematic backdrop
-      'saturation': 0.40, // More muted desaturated backdrop
+      'blur': 90.0,
+      'scale': 2.0,
+      'brightness': 0.38, // Darker cinematic backdrop
+      'saturation': 0.50, // More muted desaturated backdrop
       'radius': 24.0,
-      'shadowBlur': 40.0,
-      'shadowOpacity': 0.45,
+      'shadowBlur': 50.0,
+      'shadowOpacity': 0.40,
       'device': 'SHOT ON DEVICE',
       'metadata': 'ISO 100  •  f/1.8  •  1/125s  •  50mm',
       'aspectRatio': 1.0,
@@ -37,13 +37,13 @@ class CinemaEffectProcessor extends EffectProcessor {
 
   @override
   Widget buildEffect(BuildContext context, File originalImage, dynamic config) {
-    final double blur = (config['blur'] as num?)?.toDouble() ?? 65.0;
-    final double scale = (config['scale'] as num?)?.toDouble() ?? 1.5;
-    final double brightness = (config['brightness'] as num?)?.toDouble() ?? 0.35;
-    final double saturation = (config['saturation'] as num?)?.toDouble() ?? 0.40;
+    final double blur = (config['blur'] as num?)?.toDouble() ?? 90.0;
+    final double scale = (config['scale'] as num?)?.toDouble() ?? 2.0;
+    final double brightness = (config['brightness'] as num?)?.toDouble() ?? 0.38;
+    final double saturation = (config['saturation'] as num?)?.toDouble() ?? 0.50;
     final double radius = (config['radius'] as num?)?.toDouble() ?? 24.0;
-    final double shadowBlur = (config['shadowBlur'] as num?)?.toDouble() ?? 40.0;
-    final double shadowOpacity = (config['shadowOpacity'] as num?)?.toDouble() ?? 0.45;
+    final double shadowBlur = (config['shadowBlur'] as num?)?.toDouble() ?? 50.0;
+    final double shadowOpacity = (config['shadowOpacity'] as num?)?.toDouble() ?? 0.40;
     final String device = config['device']?.toString() ?? 'SHOT ON DEVICE';
     final String metadata = config['metadata']?.toString() ?? 'ISO 100  •  f/1.8  •  1/125s  •  50mm';
     final double aspectRatio = (config['aspectRatio'] as num?)?.toDouble() ?? 1.0;
@@ -54,40 +54,96 @@ class CinemaEffectProcessor extends EffectProcessor {
       alignment: Alignment.center,
       children: [
         // 1. Cinematic Ambient Background (deeply dimmed and desaturated ambient color bleed)
-        AmbientBackground(
-          imageFile: originalImage,
-          blur: blur,
-          scale: scale,
-          brightness: brightness,
-          saturation: saturation,
-          dominantColor: palette?.dominant,
-          showVignette: true,
+        Positioned.fill(
+          child: AmbientBackground(
+            imageFile: originalImage,
+            blur: blur,
+            scale: scale,
+            brightness: brightness,
+            saturation: saturation,
+            palette: palette,
+            showVignette: true,
+          ),
         ),
 
-        // 2. Content Stack (Card + Technical Text Details)
+        // 2. Translucent Cinematic overlays
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 100,
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.25),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 180,
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.35),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 3. Content Stack (Card + Technical Text Details)
         LayoutBuilder(
           builder: (context, constraints) {
             final canvasWidth = constraints.maxWidth;
             final canvasHeight = constraints.maxHeight;
 
-            final deviceFontSize = (canvasWidth * 0.032).clamp(11.0, 14.0);
-            final metadataFontSize = (canvasWidth * 0.026).clamp(9.0, 11.0);
-            final spacingHeight = (canvasHeight * 0.025).clamp(10.0, 20.0);
+            // Calculate card dimensions dynamically based on canvas ratios to preserve breathing room
+            final double maxImgWidth = canvasWidth * 0.82;
+            final double maxImgHeight = canvasHeight * 0.54;
+
+            double imgWidth = maxImgWidth;
+            double imgHeight = maxImgWidth / aspectRatio;
+
+            if (imgHeight > maxImgHeight) {
+              imgHeight = maxImgHeight;
+              imgWidth = maxImgHeight * aspectRatio;
+            }
+
+            final deviceFontSize = (canvasWidth * 0.032).clamp(10.0, 13.0);
+            final metadataFontSize = (canvasWidth * 0.026).clamp(8.0, 11.0);
+            final spacingHeight = (canvasHeight * 0.035).clamp(12.0, 24.0);
 
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
+                SizedBox(
+                  width: imgWidth,
+                  height: imgHeight,
                   child: ForegroundCard(
                     imageFile: originalImage,
-                    aspectRatio: aspectRatio,
                     borderRadius: radius,
                     shadowBlur: shadowBlur,
                     shadowOpacity: shadowOpacity,
                   ),
                 ),
-                SizedBox(height: spacingHeight + 5.0),
+                SizedBox(height: spacingHeight),
                 Text(
                   device.toUpperCase(),
                   textAlign: TextAlign.center,
@@ -95,7 +151,7 @@ class CinemaEffectProcessor extends EffectProcessor {
                     color: Colors.white.withOpacity(0.85),
                     fontSize: deviceFontSize,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 3.5,
+                    letterSpacing: 4.5,
                   ),
                 ),
                 const SizedBox(height: 5.0),
@@ -103,10 +159,10 @@ class CinemaEffectProcessor extends EffectProcessor {
                   metadata,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.45),
+                    color: Colors.white.withOpacity(0.42),
                     fontSize: metadataFontSize,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 2.0,
                     fontFamily: 'monospace',
                   ),
                 ),
@@ -125,9 +181,9 @@ class CinemaEffectProcessor extends EffectProcessor {
     ValueChanged<dynamic> onUpdate,
   ) {
     final Map<String, dynamic> cfg = Map<String, dynamic>.from(config as Map);
-    final double blur = (cfg['blur'] as num?)?.toDouble() ?? 65.0;
-    final double scale = (cfg['scale'] as num?)?.toDouble() ?? 1.5;
-    final double brightness = (cfg['brightness'] as num?)?.toDouble() ?? 0.35;
+    final double blur = (cfg['blur'] as num?)?.toDouble() ?? 90.0;
+    final double scale = (cfg['scale'] as num?)?.toDouble() ?? 2.0;
+    final double brightness = (cfg['brightness'] as num?)?.toDouble() ?? 0.38;
     final double radius = (cfg['radius'] as num?)?.toDouble() ?? 24.0;
     final String device = cfg['device']?.toString() ?? 'SHOT ON DEVICE';
     final String metadata = cfg['metadata']?.toString() ?? 'ISO 100  •  f/1.8  •  1/125s  •  50mm';
@@ -157,7 +213,7 @@ class CinemaEffectProcessor extends EffectProcessor {
                 child: Slider(
                   value: blur,
                   min: 10.0,
-                  max: 100.0,
+                  max: 120.0,
                   onChanged: (val) {
                     cfg['blur'] = val;
                     onUpdate(cfg);
@@ -179,7 +235,7 @@ class CinemaEffectProcessor extends EffectProcessor {
                 child: Slider(
                   value: scale,
                   min: 1.0,
-                  max: 2.0,
+                  max: 2.5,
                   onChanged: (val) {
                     cfg['scale'] = val;
                     onUpdate(cfg);

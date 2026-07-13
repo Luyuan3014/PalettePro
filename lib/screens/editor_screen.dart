@@ -21,7 +21,7 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   final GlobalKey _repaintKey = GlobalKey();
   Offset _parallaxOffset = Offset.zero;
-  int _activeTab = 0; // 0: Styles, 1: Easing/Controls
+  int _activeTab = 0; // 0: Styles, 1: Adjustments
 
   @override
   void initState() {
@@ -54,14 +54,14 @@ class _EditorScreenState extends State<EditorScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
           ),
           backgroundColor: isSuccess
-              ? Color.alphaBlend(accent.withOpacity(0.2), const Color(0xFF1E2E20))
-              : const Color(0xFF3F1B1B),
+              ? Color.alphaBlend(accent.withOpacity(0.18), const Color(0xFF141F16))
+              : const Color(0xFF2B1414),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
               color: isSuccess ? accent.withOpacity(0.3) : Colors.red.withOpacity(0.3),
-              width: 1,
+              width: 0.8,
             ),
           ),
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -97,7 +97,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.65),
+      barrierColor: Colors.black.withOpacity(0.70),
       builder: (context) {
         return Center(
           child: Padding(
@@ -106,8 +106,8 @@ class _EditorScreenState extends State<EditorScreen> {
               constraints: const BoxConstraints(maxWidth: 320),
               child: GlassmorphicPanel(
                 tintColor: palette.dominant,
-                opacity: 0.16,
-                blur: 30,
+                opacity: 0.15,
+                blur: 32,
                 borderRadius: BorderRadius.circular(28),
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -120,7 +120,7 @@ class _EditorScreenState extends State<EditorScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isSuccess ? accent.withOpacity(0.3) : Colors.red.withOpacity(0.3),
-                          width: 1.5,
+                          width: 1.2,
                         ),
                       ),
                       child: Icon(
@@ -134,8 +134,8 @@ class _EditorScreenState extends State<EditorScreen> {
                       isSuccess ? '导出成功' : '导出失败',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 2.0,
                       ),
                     ),
@@ -153,14 +153,14 @@ class _EditorScreenState extends State<EditorScreen> {
                     if (isSuccess && imageBytes != null) ...[
                       const SizedBox(height: 20),
                       Container(
-                        height: 180,
+                        height: 170,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
                           boxShadow: const [
                             BoxShadow(
-                              color: Colors.black38,
-                              blurRadius: 10,
+                              color: Colors.black26,
+                              blurRadius: 12,
                               offset: Offset(0, 4),
                             ),
                           ],
@@ -168,10 +168,10 @@ class _EditorScreenState extends State<EditorScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(15),
                           child: AspectRatio(
-                            aspectRatio: 4 / 5,
+                            aspectRatio: widget.notifier.currentCanvasAspectRatio,
                             child: Image.memory(
                               imageBytes,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -218,7 +218,7 @@ class _EditorScreenState extends State<EditorScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      barrierColor: Colors.black45,
+      barrierColor: Colors.black54,
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -226,7 +226,7 @@ class _EditorScreenState extends State<EditorScreen> {
             child: GlassmorphicPanel(
               tintColor: palette.dominant,
               opacity: 0.16,
-              blur: 30,
+              blur: 32,
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -262,9 +262,9 @@ class _EditorScreenState extends State<EditorScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
+                              color: Colors.white.withOpacity(0.03),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white10),
+                              border: Border.all(color: Colors.white.withOpacity(0.08)),
                             ),
                             child: Column(
                               children: [
@@ -286,9 +286,9 @@ class _EditorScreenState extends State<EditorScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
+                              color: Colors.white.withOpacity(0.03),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white10),
+                              border: Border.all(color: Colors.white.withOpacity(0.08)),
                             ),
                             child: Column(
                               children: [
@@ -329,27 +329,27 @@ class _EditorScreenState extends State<EditorScreen> {
                   child: AmbientBackground(
                     key: ValueKey(widget.notifier.originalImage?.path),
                     imageFile: widget.notifier.originalImage,
-                    dominantColor: palette.dominant,
+                    palette: palette,
                     parallaxOffset: _parallaxOffset,
-                    // Subtly customize background darkness depending on layout style
-                    brightness: widget.notifier.activeEffect.id == 'cinematic_frame' ? 0.38 : 0.65,
-                    saturation: widget.notifier.activeEffect.id == 'cinematic_frame' ? 0.40 : 0.60,
+                    // Subtle dynamic adjustments for cinematic layouts
+                    brightness: widget.notifier.activeEffect.id == 'cinematic_frame' ? 0.38 : 0.55,
+                    saturation: widget.notifier.activeEffect.id == 'cinematic_frame' ? 0.40 : 0.75,
                   ),
                 ),
               ),
 
-              // 2. Full-screen Interaction Viewport Layer
+              // 2. Full-screen Viewport Layer (generous margins, breathes well)
               Positioned.fill(
                 child: SafeArea(
                   child: Column(
                     children: [
-                      // Top Action Bar
+                      // Top Navigation Bar
                       _buildTopNavigationBar(context),
 
-                      // Center Preview Viewport (generous whitespace layout)
+                      // Center Card Viewport with generous spacing
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 24.0),
+                          padding: const EdgeInsets.symmetric(vertical: 28.0, horizontal: 24.0),
                           child: Center(
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 400),
@@ -357,7 +357,7 @@ class _EditorScreenState extends State<EditorScreen> {
                                 return FadeTransition(
                                   opacity: animation,
                                   child: ScaleTransition(
-                                    scale: Tween<double>(begin: 0.96, end: 1.0).animate(
+                                    scale: Tween<double>(begin: 0.97, end: 1.0).animate(
                                       CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
                                     ),
                                     child: child,
@@ -372,18 +372,18 @@ class _EditorScreenState extends State<EditorScreen> {
                         ),
                       ),
 
-                      // Bottom Floating Control Drawer
+                      // Bottom Floating Drawer panel
                       _buildControlSection(context),
                     ],
                   ),
                 ),
               ),
 
-              // 3. Loading Shield
+              // 3. Loading Protection Overlay
               if (widget.notifier.isLoading)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black38,
+                    color: Colors.black45,
                     child: Center(
                       child: CircularProgressIndicator(color: palette.accent),
                     ),
@@ -405,29 +405,29 @@ class _EditorScreenState extends State<EditorScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: GlassmorphicPanel(
         tintColor: palette.dominant,
-        opacity: 0.1,
-        blur: 24,
+        opacity: 0.12,
+        blur: 28,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         borderRadius: BorderRadius.circular(20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Import trigger icon
+            // Import photo icon button
             IconButton(
-              icon: Icon(Icons.add_photo_alternate_outlined, color: Colors.white.withOpacity(0.8), size: 24),
+              icon: Icon(Icons.add_photo_alternate_outlined, color: Colors.white.withOpacity(0.85), size: 23),
               tooltip: 'Import Photo',
               onPressed: () => _showImportSourceSheet(context),
             ),
-            // Header Typography
+            // Header Title Typography
             Text(
               '臻图坊 • PALETTEPRO',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 13,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 4.0,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 4.5,
                 shadows: [
-                  Shadow(color: Colors.black.withOpacity(0.3), offset: const Offset(0, 2), blurRadius: 4),
+                  Shadow(color: Colors.black.withOpacity(0.2), offset: const Offset(0, 1.5), blurRadius: 3),
                 ],
               ),
             ),
@@ -436,7 +436,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 ? SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: accent),
+                    child: CircularProgressIndicator(strokeWidth: 2.2, color: accent),
                   )
                 : TextButton(
                     onPressed: hasImage ? () => _handleExport(context) : null,
@@ -469,7 +469,7 @@ class _EditorScreenState extends State<EditorScreen> {
       onTap: () => _showImportSourceSheet(context),
       child: Container(
         width: double.infinity,
-        constraints: const BoxConstraints(maxHeight: 450),
+        constraints: const BoxConstraints(maxHeight: 440),
         margin: const EdgeInsets.symmetric(horizontal: 20),
         child: GlassmorphicPanel(
           tintColor: palette.dominant,
@@ -483,13 +483,13 @@ class _EditorScreenState extends State<EditorScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
+                  color: Colors.white.withOpacity(0.015),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
                 child: Icon(
                   Icons.add_a_photo_outlined,
-                  color: accent.withOpacity(0.8),
+                  color: accent.withOpacity(0.85),
                   size: 32,
                 ),
               ),
@@ -555,22 +555,28 @@ class _EditorScreenState extends State<EditorScreen> {
         widget.notifier.dismissImage();
       },
       child: AspectRatio(
-        aspectRatio: 4 / 5, // Classic premium card showcase ratio
+        aspectRatio: widget.notifier.currentCanvasAspectRatio,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(32), // Elegant Apple-like curve radius
+            border: Border.all(
+              color: Colors.white.withOpacity(0.12),
+              width: 0.8,
+            ),
             boxShadow: [
+              // Large soft depth ambient shadow matching the photo content color
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 60,
+                spreadRadius: -10,
+                offset: const Offset(0, 20),
               ),
             ],
           ),
           child: RepaintBoundary(
             key: _repaintKey,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(31.2), // Perfectly fits inside border
               child: widget.notifier.activeEffect.buildEffect(
                 context,
                 widget.notifier.originalImage!,
@@ -586,7 +592,6 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _buildControlSection(BuildContext context) {
     final bool hasImage = widget.notifier.originalImage != null;
     final palette = widget.notifier.palette;
-    final accent = palette.accent;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -599,7 +604,15 @@ class _EditorScreenState extends State<EditorScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Tabs toggle bar (only when photo is imported)
+            // 1. Aspect Ratio Switcher Row (Primary Control)
+            if (hasImage) ...[
+              _buildCanvasRatioSelector(context),
+              const SizedBox(height: 14),
+              const Divider(color: Colors.white10, height: 1, thickness: 0.8),
+              const SizedBox(height: 14),
+            ],
+
+            // 2. Tabs toggle bar (Styles vs Parameters)
             if (hasImage)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -656,7 +669,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
               ),
 
-            // Tab Content
+            // 3. Tab content wrapper
             AnimatedSize(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
@@ -682,13 +695,63 @@ class _EditorScreenState extends State<EditorScreen> {
     );
   }
 
+  Widget _buildCanvasRatioSelector(BuildContext context) {
+    final palette = widget.notifier.palette;
+    final accent = palette.accent;
+
+    return Row(
+      children: [
+        const Text(
+          '画布比例',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const Spacer(),
+        Wrap(
+          spacing: 6.0,
+          children: CanvasRatio.values.map((ratio) {
+            final isSelected = widget.notifier.canvasRatio == ratio;
+            return ChoiceChip(
+              label: Text(ratio.label),
+              selected: isSelected,
+              selectedColor: accent.withOpacity(0.24),
+              backgroundColor: Colors.transparent,
+              showCheckmark: false,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.white38,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+              shape: RoundedRectangleBorder(
+                side: BorderSide(
+                  color: isSelected ? accent.withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                  width: 0.8,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              onSelected: (selected) {
+                if (selected) {
+                  widget.notifier.setCanvasRatio(ratio);
+                }
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildStylesTab(BuildContext context) {
     final palette = widget.notifier.palette;
     final accent = palette.accent;
 
     return Container(
-      height: 80,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      height: 75,
+      margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: widget.notifier.effects.length,

@@ -16,8 +16,8 @@ class GlassmorphicPanel extends StatelessWidget {
   const GlassmorphicPanel({
     super.key,
     required this.child,
-    this.blur = 20.0,
-    this.opacity = 0.08,
+    this.blur = 28.0,
+    this.opacity = 0.14,
     this.tintColor = Colors.white,
     this.borderRadius = const BorderRadius.all(Radius.circular(24.0)),
     this.padding,
@@ -33,8 +33,9 @@ class GlassmorphicPanel extends StatelessWidget {
         borderRadius: borderRadius,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withOpacity(0.12),
             blurRadius: 30,
+            spreadRadius: -4,
             offset: const Offset(0, 10),
           ),
         ],
@@ -50,8 +51,8 @@ class GlassmorphicPanel extends StatelessWidget {
               borderRadius: borderRadius,
               border: border ??
                   Border.all(
-                    color: Colors.white.withOpacity(0.08),
-                    width: 1.0,
+                    color: Colors.white.withOpacity(0.10),
+                    width: 0.8,
                   ),
             ),
             child: child,

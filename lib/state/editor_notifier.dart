@@ -13,6 +13,17 @@ import '../processors/card_effect_processor.dart';
 import '../processors/cinema_effect_processor.dart';
 import '../theme/palette_manager.dart';
 
+enum CanvasRatio {
+  ratio3x4('3:4', 3 / 4),
+  ratio9x16('9:16', 9 / 16),
+  ratio1x1('1:1', 1.0),
+  original('Original', null);
+
+  final String label;
+  final double? value;
+  const CanvasRatio(this.label, this.value);
+}
+
 /// State management controller for the PalettePro editor.
 /// Orchestrates photo loading, dynamic palette extraction, canvas updates,
 /// and high-resolution exports.
@@ -34,6 +45,7 @@ class EditorNotifier extends ChangeNotifier {
   String? _statusMessage;
   bool _isSuccessMessage = true;
   AppPalette _palette = AppPalette.defaultDark();
+  CanvasRatio _canvasRatio = CanvasRatio.ratio3x4;
 
   // Getters
   File? get originalImage => _originalImage;
@@ -45,6 +57,20 @@ class EditorNotifier extends ChangeNotifier {
   String? get statusMessage => _statusMessage;
   bool get isSuccessMessage => _isSuccessMessage;
   AppPalette get palette => _palette;
+  CanvasRatio get canvasRatio => _canvasRatio;
+
+  double get currentCanvasAspectRatio {
+    if (_canvasRatio == CanvasRatio.original) {
+      return _imageAspectRatio ?? 1.0;
+    }
+    return _canvasRatio.value ?? 1.0;
+  }
+
+  void setCanvasRatio(CanvasRatio ratio) {
+    if (_canvasRatio == ratio) return;
+    _canvasRatio = ratio;
+    notifyListeners();
+  }
 
   EditorNotifier() {
     // Select Charming Creek Card Effect by default
@@ -76,6 +102,7 @@ class EditorNotifier extends ChangeNotifier {
     _originalImage = null;
     _imageAspectRatio = null;
     _palette = AppPalette.defaultDark();
+    _canvasRatio = CanvasRatio.ratio3x4;
     _config = _activeEffect.createDefaultConfig();
     _config['palette'] = _palette;
     _statusMessage = "Photo removed.";
