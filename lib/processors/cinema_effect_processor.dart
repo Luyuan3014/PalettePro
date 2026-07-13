@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/effect_processor.dart';
+import '../widgets/ambient_background.dart';
+import '../widgets/foreground_card.dart';
+import '../theme/palette_manager.dart';
 
 /// Cinematic Frame (电影画幅) Layout Effect.
-/// Centers the image on a deep cinematic black canvas with custom margin padding,
-/// and adds minimalist technical camera metadata in the bottom margin.
+/// Renders the image over an ultra-darkened ambient backdrop, preserving
+/// the photo card's aspect ratio, with film technical details below.
 class CinemaEffectProcessor extends EffectProcessor {
   @override
   String get id => 'cinematic_frame';
@@ -18,94 +21,100 @@ class CinemaEffectProcessor extends EffectProcessor {
   @override
   dynamic createDefaultConfig() {
     return {
-      'margin': 40.0,
+      'blur': 65.0,
+      'scale': 1.5,
+      'brightness': 0.35, // Darker cinematic backdrop
+      'saturation': 0.40, // More muted desaturated backdrop
+      'radius': 24.0,
+      'shadowBlur': 40.0,
+      'shadowOpacity': 0.45,
       'device': 'SHOT ON DEVICE',
       'metadata': 'ISO 100  •  f/1.8  •  1/125s  •  50mm',
-      'aspectRatio': 1.0, // Updated dynamically by the notifier
+      'aspectRatio': 1.0,
+      'palette': null,
     };
   }
 
   @override
   Widget buildEffect(BuildContext context, File originalImage, dynamic config) {
-    // Gracefully handle missing configuration fields using default values
-    final double margin = (config['margin'] as num?)?.toDouble() ?? 40.0;
+    final double blur = (config['blur'] as num?)?.toDouble() ?? 65.0;
+    final double scale = (config['scale'] as num?)?.toDouble() ?? 1.5;
+    final double brightness = (config['brightness'] as num?)?.toDouble() ?? 0.35;
+    final double saturation = (config['saturation'] as num?)?.toDouble() ?? 0.40;
+    final double radius = (config['radius'] as num?)?.toDouble() ?? 24.0;
+    final double shadowBlur = (config['shadowBlur'] as num?)?.toDouble() ?? 40.0;
+    final double shadowOpacity = (config['shadowOpacity'] as num?)?.toDouble() ?? 0.45;
     final String device = config['device']?.toString() ?? 'SHOT ON DEVICE';
     final String metadata = config['metadata']?.toString() ?? 'ISO 100  •  f/1.8  •  1/125s  •  50mm';
     final double aspectRatio = (config['aspectRatio'] as num?)?.toDouble() ?? 1.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final canvasWidth = constraints.maxWidth;
+    final AppPalette? palette = config['palette'] as AppPalette?;
 
-        // Visual proportions relative to container width
-        final deviceFontSize = (canvasWidth * 0.032).clamp(11.0, 15.0);
-        final metadataFontSize = (canvasWidth * 0.026).clamp(9.0, 12.0);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // 1. Cinematic Ambient Background (deeply dimmed and desaturated ambient color bleed)
+        AmbientBackground(
+          imageFile: originalImage,
+          blur: blur,
+          scale: scale,
+          brightness: brightness,
+          saturation: saturation,
+          dominantColor: palette?.dominant,
+          showVignette: true,
+        ),
 
-        // Calculate bottom offset for technical text based on margin sizes
-        final double textBottomPadding = (margin / 2).clamp(10.0, 40.0);
-        // Ensure image padding takes into account the metadata text height so they don't overlap
-        final double imageBottomPadding = margin + 35.0;
+        // 2. Content Stack (Card + Technical Text Details)
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final canvasWidth = constraints.maxWidth;
+            final canvasHeight = constraints.maxHeight;
 
-        return Container(
-          color: const Color(0xFF0A0A0A), // Deep cinematic black background
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Centered Original Image with Margins
-              Padding(
-                padding: EdgeInsets.only(
-                  left: margin,
-                  right: margin,
-                  top: margin,
-                  bottom: imageBottomPadding,
-                ),
-                child: Center(
-                  child: AspectRatio(
+            final deviceFontSize = (canvasWidth * 0.032).clamp(11.0, 14.0);
+            final metadataFontSize = (canvasWidth * 0.026).clamp(9.0, 11.0);
+            final spacingHeight = (canvasHeight * 0.025).clamp(10.0, 20.0);
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: ForegroundCard(
+                    imageFile: originalImage,
                     aspectRatio: aspectRatio,
-                    child: Image.file(
-                      originalImage,
-                      fit: BoxFit.contain,
-                    ),
+                    borderRadius: radius,
+                    shadowBlur: shadowBlur,
+                    shadowOpacity: shadowOpacity,
                   ),
                 ),
-              ),
-              // 2. Metadata Overlay Layer in the Margin
-              Positioned(
-                bottom: textBottomPadding,
-                left: margin,
-                right: margin,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      device.toUpperCase(),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
-                        fontSize: deviceFontSize,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2.5,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      metadata,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.45),
-                        fontSize: metadataFontSize,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 1.2,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ],
+                SizedBox(height: spacingHeight + 5.0),
+                Text(
+                  device.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: deviceFontSize,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 3.5,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+                const SizedBox(height: 5.0),
+                Text(
+                  metadata,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.45),
+                    fontSize: metadataFontSize,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 1.5,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -116,66 +125,138 @@ class CinemaEffectProcessor extends EffectProcessor {
     ValueChanged<dynamic> onUpdate,
   ) {
     final Map<String, dynamic> cfg = Map<String, dynamic>.from(config as Map);
-    final double margin = (cfg['margin'] as num?)?.toDouble() ?? 40.0;
+    final double blur = (cfg['blur'] as num?)?.toDouble() ?? 65.0;
+    final double scale = (cfg['scale'] as num?)?.toDouble() ?? 1.5;
+    final double brightness = (cfg['brightness'] as num?)?.toDouble() ?? 0.35;
+    final double radius = (cfg['radius'] as num?)?.toDouble() ?? 24.0;
     final String device = cfg['device']?.toString() ?? 'SHOT ON DEVICE';
     final String metadata = cfg['metadata']?.toString() ?? 'ISO 100  •  f/1.8  •  1/125s  •  50mm';
 
-    // Premium styling constants
-    const labelStyle = TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500);
-    const sliderTheme = SliderThemeData(
-      activeTrackColor: Colors.white,
-      inactiveTrackColor: Colors.white12,
-      thumbColor: Colors.white,
-      overlayColor: Colors.white10,
-    );
+    final AppPalette? palette = cfg['palette'] as AppPalette?;
+    final Color accentColor = palette?.accent ?? Colors.white;
+
+    const labelStyle = TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5);
 
     return SliderTheme(
-      data: sliderTheme,
+      data: SliderThemeData(
+        activeTrackColor: accentColor,
+        inactiveTrackColor: Colors.white10,
+        thumbColor: accentColor,
+        overlayColor: accentColor.withOpacity(0.12),
+        trackHeight: 3.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Slider: Margin
+          // Slider: Blur
           Row(
             children: [
-              const SizedBox(width: 80, child: Text('Margin (边距)', style: labelStyle)),
+              const SizedBox(width: 80, child: Text('Blur (模糊)', style: labelStyle)),
               Expanded(
                 child: Slider(
-                  value: margin,
-                  min: 15.0,
-                  max: 80.0,
+                  value: blur,
+                  min: 10.0,
+                  max: 100.0,
                   onChanged: (val) {
-                    cfg['margin'] = val;
+                    cfg['blur'] = val;
                     onUpdate(cfg);
                   },
                 ),
               ),
               SizedBox(
                 width: 35,
-                child: Text(margin.toStringAsFixed(0), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                child: Text(blur.toStringAsFixed(0),
+                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontFamily: 'monospace')),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // Text inputs for metadata
+          // Slider: Background Scale
+          Row(
+            children: [
+              const SizedBox(width: 80, child: Text('Scale (缩放)', style: labelStyle)),
+              Expanded(
+                child: Slider(
+                  value: scale,
+                  min: 1.0,
+                  max: 2.0,
+                  onChanged: (val) {
+                    cfg['scale'] = val;
+                    onUpdate(cfg);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 35,
+                child: Text('${scale.toStringAsFixed(1)}x',
+                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontFamily: 'monospace')),
+              ),
+            ],
+          ),
+          // Slider: Brightness
+          Row(
+            children: [
+              const SizedBox(width: 80, child: Text('Dim (暗度)', style: labelStyle)),
+              Expanded(
+                child: Slider(
+                  value: 1.0 - brightness,
+                  min: 0.0,
+                  max: 0.8,
+                  onChanged: (val) {
+                    cfg['brightness'] = 1.0 - val;
+                    onUpdate(cfg);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 35,
+                child: Text('${((1.0 - brightness) * 100).toStringAsFixed(0)}%',
+                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontFamily: 'monospace')),
+              ),
+            ],
+          ),
+          // Slider: Radius
+          Row(
+            children: [
+              const SizedBox(width: 80, child: Text('Radius (圆角)', style: labelStyle)),
+              Expanded(
+                child: Slider(
+                  value: radius,
+                  min: 0.0,
+                  max: 48.0,
+                  onChanged: (val) {
+                    cfg['radius'] = val;
+                    onUpdate(cfg);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 35,
+                child: Text(radius.toStringAsFixed(0),
+                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontFamily: 'monospace')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Text Fields (Device, Metadata)
           Row(
             children: [
               Expanded(
                 child: Container(
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white10),
                   ),
                   child: TextField(
                     controller: TextEditingController(text: device)
                       ..selection = TextSelection.fromPosition(TextPosition(offset: device.length)),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
                     decoration: const InputDecoration(
-                      hintText: 'Device info (e.g., Shot on Phone)',
-                      hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      hintText: 'Device info (e.g. Shot on...)',
+                      hintStyle: TextStyle(color: Colors.white24, fontSize: 11),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: InputBorder.none,
                     ),
                     onChanged: (val) {
@@ -194,18 +275,18 @@ class CinemaEffectProcessor extends EffectProcessor {
                 child: Container(
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white12),
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white10),
                   ),
                   child: TextField(
                     controller: TextEditingController(text: metadata)
                       ..selection = TextSelection.fromPosition(TextPosition(offset: metadata.length)),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
                     decoration: const InputDecoration(
-                      hintText: 'Camera settings (e.g., ISO 100 • f/1.8 • 1/125s)',
-                      hintStyle: TextStyle(color: Colors.white30, fontSize: 12),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      hintText: 'Camera metrics (e.g. ISO 100...)',
+                      hintStyle: TextStyle(color: Colors.white24, fontSize: 11),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: InputBorder.none,
                     ),
                     onChanged: (val) {

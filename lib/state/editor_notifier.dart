@@ -9,13 +9,15 @@ import 'package:file_picker/file_picker.dart';
 import '../models/effect_processor.dart';
 import '../processors/card_effect_processor.dart';
 import '../processors/cinema_effect_processor.dart';
+import '../theme/palette_manager.dart';
 
 /// State management controller for the PalettePro editor.
-/// Uses native [ChangeNotifier] to manage editor state, image imports, and high-res exports.
+/// Orchestrates photo loading, dynamic palette extraction, canvas updates,
+/// and high-resolution exports.
 class EditorNotifier extends ChangeNotifier {
   final ImagePicker _imagePicker = ImagePicker();
 
-  /// Supported visual effects list
+  /// Supported visual layouts
   final List<EffectProcessor> effects = [
     CardEffectProcessor(),
     CinemaEffectProcessor(),
@@ -29,6 +31,7 @@ class EditorNotifier extends ChangeNotifier {
   bool _isExporting = false;
   String? _statusMessage;
   bool _isSuccessMessage = true;
+  AppPalette _palette = AppPalette.defaultDark();
 
   // Getters
   File? get originalImage => _originalImage;
@@ -39,18 +42,21 @@ class EditorNotifier extends ChangeNotifier {
   bool get isExporting => _isExporting;
   String? get statusMessage => _statusMessage;
   bool get isSuccessMessage => _isSuccessMessage;
+  AppPalette get palette => _palette;
 
   EditorNotifier() {
     // Select Charming Creek Card Effect by default
     _activeEffect = effects[0];
     _config = _activeEffect.createDefaultConfig();
+    _config['palette'] = _palette;
   }
 
-  /// Sets the active layout effect template.
+  /// Sets the active layout template and transfers active color states.
   void selectEffect(EffectProcessor effect) {
     if (_activeEffect.id == effect.id) return;
     _activeEffect = effect;
     _config = effect.createDefaultConfig();
+    _config['palette'] = _palette;
     if (_imageAspectRatio != null) {
       _config['aspectRatio'] = _imageAspectRatio!;
     }
@@ -63,7 +69,19 @@ class EditorNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Imports a photo using the image picker.
+  /// Clears the imported photo state (triggers on gesture dismiss).
+  void dismissImage() {
+    _originalImage = null;
+    _imageAspectRatio = null;
+    _palette = AppPalette.defaultDark();
+    _config = _activeEffect.createDefaultConfig();
+    _config['palette'] = _palette;
+    _statusMessage = "Photo removed.";
+    _isSuccessMessage = true;
+    notifyListeners();
+  }
+
+  /// Imports a photo, calculates its aspect ratio, and extracts its dominant palette.
   Future<void> pickImage(ImageSource source) async {
     try {
       _isLoading = true;
@@ -77,12 +95,19 @@ class EditorNotifier extends ChangeNotifier {
 
       if (file != null) {
         final File selectedFile = File(file.path);
+        
         // Calculate original image aspect ratio
         final double ratio = await _calculateAspectRatio(selectedFile);
         
+        // Asynchronously extract color palette
+        final AppPalette extractedPalette = await AppPalette.extract(selectedFile);
+
         _originalImage = selectedFile;
         _imageAspectRatio = ratio;
+        _palette = extractedPalette;
+        
         _config['aspectRatio'] = ratio;
+        _config['palette'] = extractedPalette;
         
         _statusMessage = "Photo imported successfully.";
         _isSuccessMessage = true;
@@ -143,10 +168,9 @@ class EditorNotifier extends ChangeNotifier {
       );
 
       if (outputFile != null) {
-        // If file_picker did not write the bytes directly (e.g. on Desktop), do it here.
         final File file = File(outputFile);
         await file.writeAsBytes(pngBytes);
-        _statusMessage = "Photo exported to ${file.uri.pathSegments.last} successfully.";
+        _statusMessage = "Photo exported successfully.";
         _isSuccessMessage = true;
       } else {
         _statusMessage = "Export cancelled.";

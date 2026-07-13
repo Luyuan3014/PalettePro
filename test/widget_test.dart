@@ -7,9 +7,9 @@ void main() {
     await tester.pumpWidget(const PaletteProApp());
 
     // Verify that our app bar shows the correct title.
-    expect(find.text('PalettePro (臻图坊)'), findsOneWidget);
+    expect(find.text('臻图坊 • PALETTEPRO'), findsOneWidget);
 
     // Verify that the initial placeholder canvas exists.
-    expect(find.text('臻图坊 • PALETTEPRO'), findsOneWidget);
+    expect(find.text('臻图坊'), findsOneWidget);
   });
 }

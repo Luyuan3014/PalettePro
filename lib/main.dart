@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'state/editor_notifier.dart';
 import 'screens/editor_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Set system bar styling to transparent for real edge-to-edge immersion
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
+
   runApp(const PaletteProApp());
 }
 
@@ -38,24 +48,18 @@ class _PaletteProAppState extends State<PaletteProApp> {
       themeMode: ThemeMode.dark,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.light,
+        brightness: Brightness.dark,
         primaryColor: Colors.black,
-        scaffoldBackgroundColor: const Color(0xFF121212),
+        scaffoldBackgroundColor: const Color(0xFF101010),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF121212),
+        scaffoldBackgroundColor: const Color(0xFF101010),
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
           secondary: Colors.white70,
-          surface: Color(0xFF1E1E1E),
-        ),
-        sliderTheme: const SliderThemeData(
-          activeTrackColor: Colors.white,
-          inactiveTrackColor: Colors.white12,
-          thumbColor: Colors.white,
-          overlayColor: Colors.white10,
+          surface: Color(0xFF161616),
         ),
       ),
       home: EditorScreen(notifier: _notifier),

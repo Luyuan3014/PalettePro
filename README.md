@@ -72,6 +72,9 @@ flutter build windows
 # Android 移动端
 flutter build apk --release
 
+# 分包编译 Android
+flutter build apk --release --split-per-abi
+
 # iOS 移动端
 flutter build ipa
 ```
