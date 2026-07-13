@@ -24,30 +24,30 @@ class ForegroundCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        // Ambient Light Edge (Micro border) to enhance depth on dark backdrops
+        // Ambient Light Edge (Micro border) to enhance depth on dark backdrops - refined to 0.5px
         border: Border.all(
-          color: Colors.white.withOpacity(0.12),
-          width: 0.8,
+          color: Colors.white.withOpacity(0.20),
+          width: 0.5,
         ),
         boxShadow: [
-          // Large soft ambient shadow
+          // 1. Bottom Ambient Shadow (Large blur, subtle spread, low opacity)
           BoxShadow(
-            color: Colors.black.withOpacity(shadowOpacity * 0.65),
+            color: Colors.black.withOpacity(shadowOpacity * 0.60),
             blurRadius: shadowBlur,
-            spreadRadius: -5,
-            offset: const Offset(0, 16),
+            spreadRadius: 2.0,
+            offset: const Offset(0, 10),
           ),
-          // Tight crisp occlusion shadow
+          // 2. Top Core Drop Shadow (Smaller blur, tight spread, slightly higher relative opacity)
           BoxShadow(
-            color: Colors.black.withOpacity(shadowOpacity * 0.35),
-            blurRadius: 8,
-            spreadRadius: -2,
+            color: Colors.black.withOpacity(shadowOpacity * 0.40),
+            blurRadius: (shadowBlur * 0.33).clamp(4.0, 30.0),
+            spreadRadius: -1.0,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius - 0.8), // Align with border width
+        borderRadius: BorderRadius.circular(borderRadius - 0.5), // Align with new border width
         child: Stack(
           fit: StackFit.expand,
           children: [

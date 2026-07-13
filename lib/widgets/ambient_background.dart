@@ -81,8 +81,8 @@ class _AmbientBackgroundState extends State<AmbientBackground> {
       return Container(color: const Color(0xFF0F0F11));
     }
 
-    // Saturation adjustment matrix
-    final double s = widget.saturation;
+    // Saturation adjustment matrix - boosted by 15% to prevent desaturation from blur
+    final double s = (widget.saturation * 1.15).clamp(0.0, 2.0);
     final double r = 0.2126 * (1 - s);
     final double g = 0.7152 * (1 - s);
     final double b = 0.0722 * (1 - s);
@@ -99,6 +99,16 @@ class _AmbientBackgroundState extends State<AmbientBackground> {
       br, 0, 0, 0, 0,
       0, br, 0, 0, 0,
       0, 0, br, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+
+    // Contrast adjustment matrix (5% boost to ensure crisp bokeh details)
+    final double c = 1.05;
+    final double contrastOffset = 0.5 * (1.0 - c) * 255;
+    final List<double> contrastMatrix = [
+      c, 0, 0, 0, contrastOffset,
+      0, c, 0, 0, contrastOffset,
+      0, 0, c, 0, contrastOffset,
       0, 0, 0, 1, 0,
     ];
 
@@ -121,16 +131,25 @@ class _AmbientBackgroundState extends State<AmbientBackground> {
               child: Transform.translate(
                 offset: Offset(tx, ty),
                 child: RepaintBoundary(
-                  child: ImageFiltered(
-                    imageFilter: ui.ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.matrix(brightnessMatrix),
+                  child: ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      (widget.palette?.lightVibrant ?? Colors.white).withOpacity(0.08),
+                      BlendMode.screen,
+                    ),
+                    child: ImageFiltered(
+                      imageFilter: ui.ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
                       child: ColorFiltered(
-                        colorFilter: ColorFilter.matrix(saturationMatrix),
-                        child: Image.file(
-                          widget.imageFile!,
-                          fit: BoxFit.cover,
-                          cacheWidth: 350,
+                        colorFilter: ColorFilter.matrix(contrastMatrix),
+                        child: ColorFiltered(
+                          colorFilter: ColorFilter.matrix(brightnessMatrix),
+                          child: ColorFiltered(
+                            colorFilter: ColorFilter.matrix(saturationMatrix),
+                            child: Image.file(
+                              widget.imageFile!,
+                              fit: BoxFit.cover,
+                              cacheWidth: 350,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -141,7 +160,24 @@ class _AmbientBackgroundState extends State<AmbientBackground> {
           ),
         ),
 
-        // 2. Liquid Color Flow Gradient Overlay
+        // 2a. Liquid Color Flow Gradient Overlay (Screen blended for glow/bokeh)
+        Positioned.fill(
+          child: CustomPaint(
+            painter: BlendModePainter(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  vibrantColor.withOpacity(0.20),
+                  Colors.transparent,
+                ],
+              ),
+              blendMode: BlendMode.screen,
+            ),
+          ),
+        ),
+
+        // 2b. Ambient Darkening Gradient (Normal blend mode to ground the canvas and text)
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
@@ -149,8 +185,8 @@ class _AmbientBackgroundState extends State<AmbientBackground> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  vibrantColor.withOpacity(0.18),
-                  darkDomColor.withOpacity(0.42),
+                  Colors.transparent,
+                  darkDomColor.withOpacity(0.38),
                 ],
               ),
             ),
@@ -217,5 +253,26 @@ class NoisePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant NoisePainter oldDelegate) {
     return oldDelegate.noiseImage != noiseImage;
+  }
+}
+
+/// Renders a gradient overlay using a custom blend mode
+class BlendModePainter extends CustomPainter {
+  final Gradient gradient;
+  final BlendMode blendMode;
+
+  BlendModePainter({required this.gradient, required this.blendMode});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..shader = gradient.createShader(Offset.zero & size)
+      ..blendMode = blendMode;
+    canvas.drawRect(Offset.zero & size, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant BlendModePainter oldDelegate) {
+    return oldDelegate.gradient != gradient || oldDelegate.blendMode != blendMode;
   }
 }

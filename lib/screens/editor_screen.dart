@@ -564,12 +564,19 @@ class _EditorScreenState extends State<EditorScreen> {
               width: 0.8,
             ),
             boxShadow: [
-              // Large soft depth ambient shadow matching the photo content color
+              // 1. Ambient depth shadow
               BoxShadow(
-                color: Colors.black.withOpacity(0.22),
-                blurRadius: 60,
-                spreadRadius: -10,
-                offset: const Offset(0, 20),
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 40,
+                spreadRadius: 2,
+                offset: const Offset(0, 15),
+              ),
+              // 2. Crisp drop shadow
+              BoxShadow(
+                color: Colors.black.withOpacity(0.10),
+                blurRadius: 15,
+                spreadRadius: -2,
+                offset: const Offset(0, 5),
               ),
             ],
           ),

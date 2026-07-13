@@ -22,10 +22,10 @@ class CinemaEffectProcessor extends EffectProcessor {
   dynamic createDefaultConfig() {
     return {
       'blur': 90.0,
-      'scale': 2.0,
+      'scale': 2.2, // Changed default background scale to 2.2 for better visual depth
       'brightness': 0.38, // Darker cinematic backdrop
       'saturation': 0.50, // More muted desaturated backdrop
-      'radius': 24.0,
+      'radius': 16.0, // Changed default radius to 16.0 for a more restrained Apple aesthetic
       'shadowBlur': 50.0,
       'shadowOpacity': 0.40,
       'device': 'SHOT ON DEVICE',
@@ -38,10 +38,10 @@ class CinemaEffectProcessor extends EffectProcessor {
   @override
   Widget buildEffect(BuildContext context, File originalImage, dynamic config) {
     final double blur = (config['blur'] as num?)?.toDouble() ?? 90.0;
-    final double scale = (config['scale'] as num?)?.toDouble() ?? 2.0;
+    final double scale = (config['scale'] as num?)?.toDouble() ?? 2.2;
     final double brightness = (config['brightness'] as num?)?.toDouble() ?? 0.38;
     final double saturation = (config['saturation'] as num?)?.toDouble() ?? 0.50;
-    final double radius = (config['radius'] as num?)?.toDouble() ?? 24.0;
+    final double radius = (config['radius'] as num?)?.toDouble() ?? 16.0;
     final double shadowBlur = (config['shadowBlur'] as num?)?.toDouble() ?? 50.0;
     final double shadowOpacity = (config['shadowOpacity'] as num?)?.toDouble() ?? 0.40;
     final String device = config['device']?.toString() ?? 'SHOT ON DEVICE';
@@ -115,8 +115,8 @@ class CinemaEffectProcessor extends EffectProcessor {
             final canvasHeight = constraints.maxHeight;
 
             // Calculate card dimensions dynamically based on canvas ratios to preserve breathing room
-            final double maxImgWidth = canvasWidth * 0.82;
-            final double maxImgHeight = canvasHeight * 0.54;
+            final double maxImgWidth = canvasWidth * 0.78; // Width anchored to 78% of canvas for better side margins
+            final double maxImgHeight = canvasHeight * 0.50; // Height protected at max 50% for vertical breathing space
 
             double imgWidth = maxImgWidth;
             double imgHeight = maxImgWidth / aspectRatio;
@@ -152,6 +152,13 @@ class CinemaEffectProcessor extends EffectProcessor {
                     fontSize: deviceFontSize,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 4.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.35),
+                        offset: const Offset(0, 1.5),
+                        blurRadius: 4.0,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 5.0),
@@ -164,6 +171,13 @@ class CinemaEffectProcessor extends EffectProcessor {
                     fontWeight: FontWeight.w300,
                     letterSpacing: 2.0,
                     fontFamily: 'monospace',
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.30),
+                        offset: const Offset(0, 1.0),
+                        blurRadius: 3.0,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -235,7 +249,7 @@ class CinemaEffectProcessor extends EffectProcessor {
                 child: Slider(
                   value: scale,
                   min: 1.0,
-                  max: 2.5,
+                  max: 3.0, // Expanded slider max to 3.0 (300% zoom)
                   onChanged: (val) {
                     cfg['scale'] = val;
                     onUpdate(cfg);
